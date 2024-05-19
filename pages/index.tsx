@@ -91,6 +91,22 @@ const saveChanges = async (postId: string, updatedData: Partial<Post>) => {
   }
 };
 
+const fetchPostById = async (postId: string) => {
+  try {
+    const res = await fetch(`https://post-api.opensource-technology.com/api/posts/${postId}`);
+    if (res.ok) {
+      const postData = await res.json();
+      return postData;
+    } else {
+      console.error('Failed to fetch post data');
+      return null;
+    }
+  } catch (error) {
+    console.error('Error fetching post data:', error);
+    return null;
+  }
+};
+
 const deletePost = async (postId: string, setDeleteSuccess: React.Dispatch<React.SetStateAction<boolean>>) => {
   try {
     const res = await fetch(`https://post-api.opensource-technology.com/api/posts/${postId}`, {
@@ -109,17 +125,33 @@ const deletePost = async (postId: string, setDeleteSuccess: React.Dispatch<React
 
 
 const Post: React.FC<HomeProps> = ({ posts }) => {
+  const [editedTitle, setEditedTitle] = useState('');
+  const [editedContent, setEditedContent] = useState('');
+
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [currentPost, setCurrentPost] = useState<Post | null>(null);
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
+  // const [title, setTitle] = useState('');
+  // const [content, setContent] = useState('');
   const [deleteSuccess, setDeleteSuccess] = useState(false);
 
-  const handleEditClick = (post: Post) => {
+
+  const handleEditClick = async (post: Post) => {
     setCurrentPost(post);
-    setTitle(post.title);
-    setContent(post.content);
     setEditModalOpen(true);
+  
+    try {
+      // Fetch post data by ID
+      const postData = await fetchPostById(post.id);
+      if (postData) {
+        // Populate the text fields in the edit modal with fetched data
+        setEditedTitle(postData.title);
+        setEditedContent(postData.content);
+      } else {
+        console.error('Failed to fetch post data for editing');
+      }
+    } catch (error) {
+      console.error('Error fetching post data for editing:', error);
+    }
   };
 
   const handleModalClose = () => {
@@ -129,9 +161,9 @@ const Post: React.FC<HomeProps> = ({ posts }) => {
 
   const handleSaveChanges = async () => {
     if (currentPost) {
-      const success = await saveChanges(currentPost.id, { title, content });
+      const success = await saveChanges(currentPost.id, { title: editedTitle, content: editedContent });
       if (success) {
-        // Optionally, you can perform additional actions upon successful save
+        window.location.reload();
       }
       handleModalClose();
     }
@@ -141,6 +173,7 @@ const Post: React.FC<HomeProps> = ({ posts }) => {
     if (currentPost) {
       await deletePost(currentPost.id, setDeleteSuccess);
       handleModalClose();
+      window.location.reload();
     }
   };
 
@@ -179,33 +212,33 @@ const Post: React.FC<HomeProps> = ({ posts }) => {
       <Dialog open={editModalOpen} onClose={handleModalClose}>
         <DialogTitle sx={{ textAlign: 'center' }}>Edit Post</DialogTitle>
         <DialogContent>
-          {currentPost && (
-            <>
-              <TextField
-                autoFocus
-                margin="dense"
-                id="title"
-                label="Title"
-                type="text"
-                fullWidth
-                variant="outlined"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-              />
-              <TextField
-                margin="dense"
-                id="content"
-                label="Content"
-                type="text"
-                fullWidth
-                variant="outlined"
-                multiline
-                rows={4}
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-              />
-            </>
-          )}
+        {currentPost && (
+    <>
+      <TextField
+        autoFocus
+        margin="dense"
+        id="title"
+        label="Title"
+        type="text"
+        fullWidth
+        variant="outlined"
+        value={editedTitle}
+        onChange={(e) => setEditedTitle(e.target.value)}
+      />
+      <TextField
+        margin="dense"
+        id="content"
+        label="Content"
+        type="text"
+        fullWidth
+        variant="outlined"
+        multiline
+        rows={4}
+        value={editedContent}
+        onChange={(e) => setEditedContent(e.target.value)}
+      />
+    </>
+  )}
         </DialogContent>
         <DialogActions>
         <Button onClick={handleSaveChanges} sx={{ width: '100%', textTransform: 'none' }}>Save</Button>
