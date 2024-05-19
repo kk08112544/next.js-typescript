@@ -208,8 +208,8 @@ const Post: React.FC<HomeProps> = ({ posts }) => {
           )}
         </DialogContent>
         <DialogActions>
-        <Button onClick={handleModalClose} sx={{ width: '100%', textTransform: 'none' }}>Cancel</Button>
         <Button onClick={handleSaveChanges} sx={{ width: '100%', textTransform: 'none' }}>Save</Button>
+        <Button onClick={handleModalClose} sx={{ width: '100%', textTransform: 'none' }}>Cancel</Button>
         <Button onClick={handleDeletePost} sx={{ width: '100%', textTransform: 'none' }}>Delete</Button>
         </DialogActions>
       </Dialog>
