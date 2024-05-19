@@ -85,7 +85,7 @@ const Home: React.FC<HomeProps> = ({ posts }) => {
                 <Typography variant="body2" color="text.secondary" sx={{ padding: 1 }}>
                   {formatDate(post.created_at)}
                 </Typography>
-                <Button size="small" variant="outlined" sx={{ textTransform: 'none' }}>Edit</Button>
+                <Button href={'/editData/'+post.id} size="small" variant="outlined" sx={{ textTransform: 'none' }}>Edit</Button>
               </CardActions>
             </Card>
           </Grid>

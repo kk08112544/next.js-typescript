@@ -153,4 +153,3 @@ const Drafts: React.FC<HomeProps> = ({ posts }) => {
 };
 
 export default Drafts;
-
