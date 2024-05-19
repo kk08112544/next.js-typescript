@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { GetStaticProps } from 'next';
 import Card from '@mui/material/Card';
 import CardActions from '@mui/material/CardActions';
@@ -6,10 +6,12 @@ import CardContent from '@mui/material/CardContent';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import Grid from '@mui/material/Grid';
-import { SxProps } from '@mui/system';
-import Box from '@mui/material/Box';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle';
+import TextField from '@mui/material/TextField';
 import Navbar from '@/components/Navbar';
-
 
 type Post = {
   id: string;
@@ -28,9 +30,8 @@ export const getStaticProps: GetStaticProps = async () => {
     const res = await fetch('https://post-api.opensource-technology.com/api/posts?page=1&limit=10');
     const data = await res.json();
 
-    console.log('Fetched data:', data); // Log fetched data
+    // console.log('Fetched data:', data);
 
-    // Ensure the response has the correct structure and default to an empty array if not
     const posts = Array.isArray(data.posts) ? data.posts : [];
 
     return {
@@ -48,7 +49,7 @@ const formatDate = (dateString: string): string => {
   try {
     const date = new Date(dateString);
     const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-based
+    const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     const hours = String(date.getHours()).padStart(2, '0');
     const minutes = String(date.getMinutes()).padStart(2, '0');
@@ -59,21 +60,100 @@ const formatDate = (dateString: string): string => {
   }
 };
 
-const Home: React.FC<HomeProps> = ({ posts }) => {
-  if (!Array.isArray(posts)) {
-    return <Typography variant="h6" component="p">Failed to load posts.</Typography>;
+const saveChanges = async (postId: string, updatedData: Partial<Post>) => {
+  try {
+    const res1 = await fetch(`https://post-api.opensource-technology.com/api/posts/${postId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(updatedData),
+    });
+
+    const res2 = await fetch(`https://post-api.opensource-technology.com/api/posts/${postId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ published: true }),
+    });
+
+    if (res1.ok && res2.ok) {
+      console.log('Post updated successfully');
+      return true;
+    } else {
+      console.error('Failed to update post');
+      return false;
+    }
+  } catch (error) {
+    console.error('Error updating post:', error);
+    return false;
   }
+};
+
+const deletePost = async (postId: string, setDeleteSuccess: React.Dispatch<React.SetStateAction<boolean>>) => {
+  try {
+    const res = await fetch(`https://post-api.opensource-technology.com/api/posts/${postId}`, {
+      method: 'DELETE',
+    });
+    if (res.ok) {
+      console.log('Post deleted successfully');
+      setDeleteSuccess(true);
+    } else {
+      console.error('Failed to delete post');
+    }
+  } catch (error) {
+    console.error('Error deleting post:', error);
+  }
+};
+
+
+const Post: React.FC<HomeProps> = ({ posts }) => {
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [currentPost, setCurrentPost] = useState<Post | null>(null);
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const [deleteSuccess, setDeleteSuccess] = useState(false);
+
+  const handleEditClick = (post: Post) => {
+    setCurrentPost(post);
+    setTitle(post.title);
+    setContent(post.content);
+    setEditModalOpen(true);
+  };
+
+  const handleModalClose = () => {
+    setEditModalOpen(false);
+    setCurrentPost(null);
+  };
+
+  const handleSaveChanges = async () => {
+    if (currentPost) {
+      const success = await saveChanges(currentPost.id, { title, content });
+      if (success) {
+        // Optionally, you can perform additional actions upon successful save
+      }
+      handleModalClose();
+    }
+  };
+
+  const handleDeletePost = async () => {
+    if (currentPost) {
+      await deletePost(currentPost.id, setDeleteSuccess);
+      handleModalClose();
+    }
+  };
 
   return (
     <div>
       <Typography variant="h4" component="h1" gutterBottom>
-        <Navbar/>
+        <Navbar />
       </Typography>
       <Grid>
         {posts.map((post) => (
           <Grid item xs={12} sm={6} md={4} key={post.id}>
-            <Card sx={{ maxWidth: 2500, m: 2 }}>
-              <CardContent>
+            <Card sx={{ maxWidth: 2500, display: 'flex', flexDirection: 'column', height: '100%', m: 2 }}>
+              <CardContent sx={{ flexGrow: 1 }}>
                 <Typography gutterBottom variant="h5" component="div">
                   {post.title}
                 </Typography>
@@ -85,15 +165,57 @@ const Home: React.FC<HomeProps> = ({ posts }) => {
                 <Typography variant="body2" color="text.secondary" sx={{ padding: 1 }}>
                   {formatDate(post.created_at)}
                 </Typography>
-                <Button href={'/editData/'+post.id} size="small" variant="outlined" sx={{ textTransform: 'none' }}>Edit</Button>
+                <div>
+                  <Button size="small" variant="outlined" sx={{ textTransform: 'none', mb: 1 }} onClick={() => handleEditClick(post)}>
+                    Edit
+                  </Button>
+                </div>
               </CardActions>
             </Card>
           </Grid>
         ))}
       </Grid>
-      
+
+      <Dialog open={editModalOpen} onClose={handleModalClose}>
+        <DialogTitle sx={{ textAlign: 'center' }}>Edit Post</DialogTitle>
+        <DialogContent>
+          {currentPost && (
+            <>
+              <TextField
+                autoFocus
+                margin="dense"
+                id="title"
+                label="Title"
+                type="text"
+                fullWidth
+                variant="outlined"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+              />
+              <TextField
+                margin="dense"
+                id="content"
+                label="Content"
+                type="text"
+                fullWidth
+                variant="outlined"
+                multiline
+                rows={4}
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+              />
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+        <Button onClick={handleModalClose} sx={{ width: '100%', textTransform: 'none' }}>Cancel</Button>
+        <Button onClick={handleSaveChanges} sx={{ width: '100%', textTransform: 'none' }}>Save</Button>
+        <Button onClick={handleDeletePost} sx={{ width: '100%', textTransform: 'none' }}>Delete</Button>
+        </DialogActions>
+      </Dialog>
+
     </div>
   );
 };
 
-export default Home;
+export default Post;

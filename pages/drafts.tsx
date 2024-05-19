@@ -6,6 +6,11 @@ import CardContent from '@mui/material/CardContent';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import Grid from '@mui/material/Grid';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle';
+import TextField from '@mui/material/TextField';
 import Navbar from '@/components/Navbar';
 
 type Post = {
@@ -25,7 +30,7 @@ export const getStaticProps: GetStaticProps = async () => {
     const res = await fetch('https://post-api.opensource-technology.com/api/posts/draft');
     const data = await res.json();
 
-    console.log('Fetched data:', data);
+    // console.log('Fetched data:', data);
 
     const posts = Array.isArray(data.posts) ? data.posts : [];
 
@@ -94,6 +99,8 @@ const publishPost = async (postId: string, setPublishSuccess: React.Dispatch<Rea
 const Drafts: React.FC<HomeProps> = ({ posts }) => {
   const [deleteSuccess, setDeleteSuccess] = useState(false);
   const [publishSuccess, setPublishSuccess] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [currentPost, setCurrentPost] = useState<Post | null>(null);
 
   if (!Array.isArray(posts)) {
     return <Typography variant="h6" component="p">Failed to load posts.</Typography>;
@@ -103,10 +110,20 @@ const Drafts: React.FC<HomeProps> = ({ posts }) => {
     window.location.reload();
   }
 
+  const handleEditClick = (post: Post) => {
+    setCurrentPost(post);
+    setEditModalOpen(true);
+  };
+
+  const handleModalClose = () => {
+    setEditModalOpen(false);
+    setCurrentPost(null);
+  };
+
   return (
     <div>
       <Typography variant="h4" component="h1" gutterBottom>
-        <Navbar/>
+        <Navbar />
       </Typography>
       <Grid>
         {posts.map((post) => (
@@ -125,7 +142,9 @@ const Drafts: React.FC<HomeProps> = ({ posts }) => {
                   {formatDate(post.created_at)}
                 </Typography>
                 <div>
-                  <Button size="small" variant="outlined" sx={{ textTransform: 'none', mb: 1 }}>Edit</Button>
+                  <Button size="small" variant="outlined" sx={{ textTransform: 'none', mb: 1 }} onClick={() => handleEditClick(post)}>
+                    Edit
+                  </Button>
                   <Button
                     size="small"
                     variant="outlined"
@@ -148,6 +167,41 @@ const Drafts: React.FC<HomeProps> = ({ posts }) => {
           </Grid>
         ))}
       </Grid>
+
+      <Dialog open={editModalOpen} onClose={handleModalClose}>
+        <DialogTitle>Edit Post</DialogTitle>
+        <DialogContent>
+          {currentPost && (
+            <>
+              <TextField
+                autoFocus
+                margin="dense"
+                id="title"
+                label="Title"
+                type="text"
+                fullWidth
+                variant="outlined"
+                defaultValue={currentPost.title}
+              />
+              <TextField
+                margin="dense"
+                id="content"
+                label="Content"
+                type="text"
+                fullWidth
+                variant="outlined"
+                multiline
+                rows={4}
+                defaultValue={currentPost.content}
+              />
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleModalClose} style={{textTransform: 'none'}}>Cancel</Button>
+          <Button onClick={handleModalClose} style={{textTransform: 'none'}}>Save</Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 };
