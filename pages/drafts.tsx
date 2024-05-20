@@ -193,6 +193,28 @@ const Drafts: React.FC<HomeProps> = ({ posts }) => {
       <Typography variant="h4" component="h1" gutterBottom>
         <Navbar />
       </Typography>
+      <div className="search-container"  style={{ display: 'flex', justifyContent: 'center' }}>
+  <TextField
+    label="Search by Title"
+    variant="outlined"
+    style={{ marginRight: '1rem' }}
+  />
+  <TextField
+    label="Page Number"
+    type="number"
+    variant="outlined"
+    style={{ marginRight: '1rem' }}
+  />
+  <TextField
+    label="Limit Per page"
+    type="number"
+    variant="outlined"
+    style={{ marginRight: '1rem' }}
+  />
+   <Button variant="contained" color="primary"  sx={{textTransform: 'none' }} >
+          Search
+        </Button>
+</div>
       <Grid>
         {posts.map((post) => (
           <Grid item xs={12} sm={6} md={4} key={post.id}>
@@ -241,21 +263,22 @@ const Drafts: React.FC<HomeProps> = ({ posts }) => {
         <DialogContent>
   {currentPost && (
     <>
+     <label htmlFor="title">Title</label>
       <TextField
         autoFocus
         margin="dense"
         id="title"
-        label="Title"
         type="text"
         fullWidth
         variant="outlined"
         value={editedTitle}
         onChange={(e) => setEditedTitle(e.target.value)}
+        style={{ marginBottom: '1.0cm' }}
       />
+       <label htmlFor="title">Content</label>
       <TextField
         margin="dense"
         id="content"
-        label="Content"
         type="text"
         fullWidth
         variant="outlined"
@@ -268,19 +291,33 @@ const Drafts: React.FC<HomeProps> = ({ posts }) => {
   )}
 </DialogContent>
 
+       
         <DialogActions>
-          <Button onClick={handleSaveChanges} sx={{ width: '100%', textTransform: 'none' }}>Save</Button>
-          <Button onClick={handleModalClose} style={{textTransform: 'none'}}>Cancel</Button>
-          {/* <Button onClick={() => deletePost(currentPost.id, setDeleteSuccess)}  sx={{ width: '100%', textTransform: 'none' }}>Delete</Button> */}
-          {currentPost && (
-            <Button
-              onClick={() => deletePost(currentPost.id, setDeleteSuccess)}
-              sx={{ width: '100%', textTransform: 'none', color: 'red' }}
-            >
-              Delete
-            </Button>
-          )}
-        </DialogActions>
+  <Button
+    onClick={handleSaveChanges}
+    sx={{ textTransform: 'none', backgroundColor: 'green', color: 'white' }}
+    fullWidth
+  >
+    Save
+  </Button>
+  <Button
+    onClick={handleModalClose}
+    sx={{ textTransform: 'none', backgroundColor: 'orange', color: 'white' }}
+    fullWidth
+  >
+    Cancel
+  </Button>
+  {currentPost && (
+    <Button
+      onClick={() => deletePost(currentPost.id, setDeleteSuccess)}
+      sx={{ textTransform: 'none', backgroundColor: 'red', color: 'white' }}
+      fullWidth
+    >
+      Delete
+    </Button>
+  )}
+</DialogActions>
+
       </Dialog>
     </div>
   );

@@ -29,9 +29,6 @@ export const getStaticProps: GetStaticProps = async () => {
   try {
     const res = await fetch('https://post-api.opensource-technology.com/api/posts?page=1&limit=10');
     const data = await res.json();
-
-    // console.log('Fetched data:', data);
-
     const posts = Array.isArray(data.posts) ? data.posts : [];
 
     return {
@@ -130,9 +127,10 @@ const Post: React.FC<HomeProps> = ({ posts }) => {
 
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [currentPost, setCurrentPost] = useState<Post | null>(null);
-  // const [title, setTitle] = useState('');
-  // const [content, setContent] = useState('');
   const [deleteSuccess, setDeleteSuccess] = useState(false);
+  const [pageNumber, setPageNumber] = useState(1);
+  const [limit, setLimit] = useState(10);
+
 
 
   const handleEditClick = async (post: Post) => {
@@ -182,6 +180,28 @@ const Post: React.FC<HomeProps> = ({ posts }) => {
       <Typography variant="h4" component="h1" gutterBottom>
         <Navbar />
       </Typography>
+      <div className="search-container"  style={{ display: 'flex', justifyContent: 'center' }}>
+  <TextField
+    label="Search by Title"
+    variant="outlined"
+    style={{ marginRight: '1rem' }}
+  />
+  <TextField
+    label="Page Number"
+    type="number"
+    variant="outlined"
+    style={{ marginRight: '1rem' }}
+  />
+  <TextField
+    label="Limit Per page"
+    type="number"
+    variant="outlined"
+    style={{ marginRight: '1rem' }}
+  />
+   <Button variant="contained" color="primary"  sx={{textTransform: 'none' }} >
+          Search
+        </Button>
+</div>
       <Grid>
         {posts.map((post) => (
           <Grid item xs={12} sm={6} md={4} key={post.id}>
@@ -214,21 +234,22 @@ const Post: React.FC<HomeProps> = ({ posts }) => {
         <DialogContent>
         {currentPost && (
     <>
+     <label htmlFor="title">Title</label>
       <TextField
         autoFocus
         margin="dense"
         id="title"
-        label="Title"
         type="text"
         fullWidth
         variant="outlined"
         value={editedTitle}
         onChange={(e) => setEditedTitle(e.target.value)}
+        style={{ marginBottom: '1.0cm' }}
       />
+       <label htmlFor="title">Content</label>
       <TextField
         margin="dense"
         id="content"
-        label="Content"
         type="text"
         fullWidth
         variant="outlined"
@@ -239,12 +260,17 @@ const Post: React.FC<HomeProps> = ({ posts }) => {
       />
     </>
   )}
-        </DialogContent>
-        <DialogActions>
-        <Button onClick={handleSaveChanges} sx={{ width: '100%', textTransform: 'none' }}>Save</Button>
-        <Button onClick={handleModalClose} sx={{ width: '100%', textTransform: 'none' }}>Cancel</Button>
-        <Button onClick={handleDeletePost} sx={{ width: '100%', textTransform: 'none' }}>Delete</Button>
+   <DialogActions>
+        <Button  onClick={handleSaveChanges} sx={{ width: '100%', textTransform: 'none', backgroundColor: 'green', color: 'white' }}>Save</Button>
+        <Button onClick={handleModalClose} sx={{ width: '100%', textTransform: 'none' , backgroundColor: 'orange', color: 'white'}}>Cancel</Button>
+        <Button onClick={handleDeletePost} sx={{ width: '100%', textTransform: 'none', backgroundColor: 'red', color: 'white' }}>Delete</Button>
         </DialogActions>
+        </DialogContent>
+        {/* <DialogActions>
+        <Button  onClick={handleSaveChanges} sx={{ width: '100%', textTransform: 'none', backgroundColor: 'green', color: 'white' }}>Save</Button>
+        <Button onClick={handleModalClose} sx={{ width: '100%', textTransform: 'none' , backgroundColor: 'orange', color: 'white'}}>Cancel</Button>
+        <Button onClick={handleDeletePost} sx={{ width: '100%', textTransform: 'none', backgroundColor: 'red', color: 'white' }}>Delete</Button>
+        </DialogActions> */}
       </Dialog>
 
     </div>
