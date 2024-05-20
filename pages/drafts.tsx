@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { GetStaticProps } from 'next';
 import Card from '@mui/material/Card';
 import CardActions from '@mui/material/CardActions';
@@ -27,7 +27,7 @@ type HomeProps = {
 
 export const getStaticProps: GetStaticProps = async () => {
   try {
-    const res = await fetch('https://post-api.opensource-technology.com/api/posts/draft');
+    const res = await fetch('https://post-api.opensource-technology.com/api/posts/draft?page=1&limit=10');
     const data = await res.json();
 
     // console.log('Fetched data:', data);
@@ -136,7 +136,9 @@ const publishPost = async (postId: string, setPublishSuccess: React.Dispatch<Rea
   }
 };
 
-const Drafts: React.FC<HomeProps> = ({ posts }) => {
+const Drafts: React.FC<HomeProps> = ({ posts: initialPosts }) => {
+
+  const [posts, setPosts] = useState(initialPosts);
   const [editedTitle, setEditedTitle] = useState('');
   const [editedContent, setEditedContent] = useState('');
 
@@ -144,6 +146,14 @@ const Drafts: React.FC<HomeProps> = ({ posts }) => {
   const [publishSuccess, setPublishSuccess] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [currentPost, setCurrentPost] = useState<Post | null>(null);
+
+  const [searchTerm, setSearchTerm] = useState('');
+  const [page, setPage] = useState<number>(1);
+  const [limit, setLimit] = useState<number>(10);
+
+  useEffect(() => {
+    handleSearch();
+  }, []);
 
   if (!Array.isArray(posts)) {
     return <Typography variant="h6" component="p">Failed to load posts.</Typography>;
@@ -182,38 +192,64 @@ const Drafts: React.FC<HomeProps> = ({ posts }) => {
     }
   };
 
+  
 
   const handleModalClose = () => {
     setEditModalOpen(false);
     setCurrentPost(null);
   };
 
+
+  const handleSearch = async () => {
+    try {
+      console.log(searchTerm);
+      console.log(page);
+      console.log(limit);
+      const url = searchTerm
+        ? `https://post-api.opensource-technology.com/api/posts/draft?term=${searchTerm}&page=${page}&limit=${limit}`
+        : `https://post-api.opensource-technology.com/api/posts/draft?page=${page}&limit=${limit}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const posts = Array.isArray(data.posts) ? data.posts : [];
+      setPosts(posts);
+    } catch (error) {
+      console.error('Error fetching posts:', error);
+    }
+  };
+  
+
   return (
     <div>
       <Typography variant="h4" component="h1" gutterBottom>
         <Navbar />
       </Typography>
-      <div className="search-container"  style={{ display: 'flex', justifyContent: 'center' }}>
+      <div className="search-container" style={{ display: 'flex', justifyContent: 'center' }}>
   <TextField
     label="Search by Title"
     variant="outlined"
+    value={searchTerm}
+    onChange={(e) => setSearchTerm(e.target.value)}
     style={{ marginRight: '1rem' }}
   />
   <TextField
     label="Page Number"
     type="number"
     variant="outlined"
+    value={page}
+    onChange={(e) => setPage(Number(e.target.value))}
     style={{ marginRight: '1rem' }}
   />
   <TextField
-    label="Limit Per page"
+    label="Limit Per Page"
     type="number"
     variant="outlined"
+    value={limit}
+    onChange={(e) => setLimit(Number(e.target.value))}
     style={{ marginRight: '1rem' }}
   />
-   <Button variant="contained" color="primary"  sx={{textTransform: 'none' }} >
-          Search
-        </Button>
+  <Button variant="contained" color="primary" sx={{ textTransform: 'none' }} onClick={handleSearch}>
+    Search
+  </Button>
 </div>
       <Grid>
         {posts.map((post) => (
