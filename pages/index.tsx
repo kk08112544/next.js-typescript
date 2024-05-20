@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { GetStaticProps } from 'next';
 import Card from '@mui/material/Card';
 import CardActions from '@mui/material/CardActions';
@@ -120,28 +120,30 @@ const deletePost = async (postId: string, setDeleteSuccess: React.Dispatch<React
   }
 };
 
-
-const Post: React.FC<HomeProps> = ({ posts }) => {
+const Post: React.FC<HomeProps> = ({ posts: initialPosts }) => {
+  const [posts, setPosts] = useState(initialPosts);
   const [editedTitle, setEditedTitle] = useState('');
   const [editedContent, setEditedContent] = useState('');
 
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [currentPost, setCurrentPost] = useState<Post | null>(null);
   const [deleteSuccess, setDeleteSuccess] = useState(false);
-  const [pageNumber, setPageNumber] = useState(1);
-  const [limit, setLimit] = useState(10);
 
+  const [searchTerm, setSearchTerm] = useState('');
+  const [page, setPage] = useState<number>(1);
+  const [limit, setLimit] = useState<number>(10);
 
+  useEffect(() => {
+    handleSearch();
+  }, []);
 
   const handleEditClick = async (post: Post) => {
     setCurrentPost(post);
     setEditModalOpen(true);
-  
+
     try {
-      // Fetch post data by ID
       const postData = await fetchPostById(post.id);
       if (postData) {
-        // Populate the text fields in the edit modal with fetched data
         setEditedTitle(postData.title);
         setEditedContent(postData.content);
       } else {
@@ -161,7 +163,7 @@ const Post: React.FC<HomeProps> = ({ posts }) => {
     if (currentPost) {
       const success = await saveChanges(currentPost.id, { title: editedTitle, content: editedContent });
       if (success) {
-        window.location.reload();
+        handleSearch();
       }
       handleModalClose();
     }
@@ -170,8 +172,25 @@ const Post: React.FC<HomeProps> = ({ posts }) => {
   const handleDeletePost = async () => {
     if (currentPost) {
       await deletePost(currentPost.id, setDeleteSuccess);
+      handleSearch();
       handleModalClose();
-      window.location.reload();
+    }
+  };
+
+  const handleSearch = async () => {
+    try {
+      console.log(searchTerm);
+      console.log(page);
+      console.log(limit);
+      const url = searchTerm
+        ? `https://post-api.opensource-technology.com/api/posts?term=${searchTerm}&page=${page}&limit=${limit}`
+        : `https://post-api.opensource-technology.com/api/posts?page=${page}&limit=${limit}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const posts = Array.isArray(data.posts) ? data.posts : [];
+      setPosts(posts);
+    } catch (error) {
+      console.error('Error fetching posts:', error);
     }
   };
 
@@ -180,32 +199,38 @@ const Post: React.FC<HomeProps> = ({ posts }) => {
       <Typography variant="h4" component="h1" gutterBottom>
         <Navbar />
       </Typography>
-      <div className="search-container"  style={{ display: 'flex', justifyContent: 'center' }}>
-  <TextField
-    label="Search by Title"
-    variant="outlined"
-    style={{ marginRight: '1rem' }}
-  />
-  <TextField
-    label="Page Number"
-    type="number"
-    variant="outlined"
-    style={{ marginRight: '1rem' }}
-  />
-  <TextField
-    label="Limit Per page"
-    type="number"
-    variant="outlined"
-    style={{ marginRight: '1rem' }}
-  />
-   <Button variant="contained" color="primary"  sx={{textTransform: 'none' }} >
+      <div className="search-container" style={{ display: 'flex', justifyContent: 'center' }}>
+        <TextField
+          label="Search by Title"
+          variant="outlined"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          style={{ marginRight: '1rem' }}
+        />
+        <TextField
+          label="Page Number"
+          type="number"
+          variant="outlined"
+          value={page}
+          onChange={(e) => setPage(Number(e.target.value))}
+          style={{ marginRight: '1rem' }}
+        />
+        <TextField
+          label="Limit Per Page"
+          type="number"
+          variant="outlined"
+          value={limit}
+          onChange={(e) => setLimit(Number(e.target.value))}
+          style={{ marginRight: '1rem' }}
+        />
+        <Button variant="contained" color="primary" sx={{ textTransform: 'none' }} onClick={handleSearch}>
           Search
         </Button>
-</div>
-      <Grid>
+      </div>
+      <Grid container spacing={2} direction="column">
         {posts.map((post) => (
-          <Grid item xs={12} sm={6} md={4} key={post.id}>
-            <Card sx={{ maxWidth: 2500, display: 'flex', flexDirection: 'column', height: '100%', m: 2 }}>
+          <Grid item xs={12} key={post.id}>
+            <Card sx={{ maxWidth: 2500, display: 'flex', flexDirection: 'column', height: '100%' }}>
               <CardContent sx={{ flexGrow: 1 }}>
                 <Typography gutterBottom variant="h5" component="div">
                   {post.title}
@@ -232,47 +257,61 @@ const Post: React.FC<HomeProps> = ({ posts }) => {
       <Dialog open={editModalOpen} onClose={handleModalClose}>
         <DialogTitle sx={{ textAlign: 'center' }}>Edit Post</DialogTitle>
         <DialogContent>
-        {currentPost && (
-    <>
-     <label htmlFor="title">Title</label>
-      <TextField
-        autoFocus
-        margin="dense"
-        id="title"
-        type="text"
-        fullWidth
-        variant="outlined"
-        value={editedTitle}
-        onChange={(e) => setEditedTitle(e.target.value)}
-        style={{ marginBottom: '1.0cm' }}
-      />
-       <label htmlFor="title">Content</label>
-      <TextField
-        margin="dense"
-        id="content"
-        type="text"
-        fullWidth
-        variant="outlined"
-        multiline
-        rows={4}
-        value={editedContent}
-        onChange={(e) => setEditedContent(e.target.value)}
-      />
-    </>
-  )}
-   <DialogActions>
-        <Button  onClick={handleSaveChanges} sx={{ width: '100%', textTransform: 'none', backgroundColor: 'green', color: 'white' }}>Save</Button>
-        <Button onClick={handleModalClose} sx={{ width: '100%', textTransform: 'none' , backgroundColor: 'orange', color: 'white'}}>Cancel</Button>
-        <Button onClick={handleDeletePost} sx={{ width: '100%', textTransform: 'none', backgroundColor: 'red', color: 'white' }}>Delete</Button>
-        </DialogActions>
+          {currentPost && (
+            <>
+              <label htmlFor="title">Title</label>
+              <TextField
+                autoFocus
+                margin="dense"
+                id="title"
+                type="text"
+                fullWidth
+                variant="outlined"
+                value={editedTitle}
+                onChange={(e) => setEditedTitle(e.target.value)}
+                style={{ marginBottom: '1rem' }}
+              />
+              <label htmlFor="content">Content</label>
+              <TextField
+                margin="dense"
+                id="content"
+                type="text"
+                fullWidth
+                variant="outlined"
+                value={editedContent}
+                onChange={(e) => setEditedContent(e.target.value)}
+                style={{ marginBottom: '1rem' }}
+              />
+            </>
+          )}
         </DialogContent>
-        {/* <DialogActions>
-        <Button  onClick={handleSaveChanges} sx={{ width: '100%', textTransform: 'none', backgroundColor: 'green', color: 'white' }}>Save</Button>
-        <Button onClick={handleModalClose} sx={{ width: '100%', textTransform: 'none' , backgroundColor: 'orange', color: 'white'}}>Cancel</Button>
-        <Button onClick={handleDeletePost} sx={{ width: '100%', textTransform: 'none', backgroundColor: 'red', color: 'white' }}>Delete</Button>
-        </DialogActions> */}
-      </Dialog>
+        <DialogActions>
+  <Button
+    onClick={handleSaveChanges}
+    sx={{ textTransform: 'none', backgroundColor: 'green', color: 'white' }}
+    fullWidth
+  >
+    Save
+  </Button>
+  <Button
+    onClick={handleModalClose}
+    sx={{ textTransform: 'none', backgroundColor: 'orange', color: 'white' }}
+    fullWidth
+  >
+    Cancel
+  </Button>
+  {currentPost && (
+    <Button
+      onClick={handleDeletePost}
+      sx={{ textTransform: 'none', backgroundColor: 'red', color: 'white' }}
+      fullWidth
+    >
+      Delete
+    </Button>
+  )}
+</DialogActions>
 
+      </Dialog>
     </div>
   );
 };
